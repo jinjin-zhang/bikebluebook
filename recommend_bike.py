@@ -17,6 +17,9 @@ import requests
 import certifi
 from collections import defaultdict
 
+import text_to_attrs
+import attrs_clean
+
 
 def get_new_posting_attrs(posting_URLs):        
     bike_attrs = defaultdict(list)    
@@ -28,6 +31,8 @@ def get_new_posting_attrs(posting_URLs):
         bike_attrs[var] = []    
     http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',ca_certs=certifi.where())
     # get the html text data and imageURL         
+    response = http.request('GET',posting_URLs)
+    soup = BeautifulSoup(response.data, "lxml")
     try:
         response = http.request('GET',posting_URLs)
         soup = BeautifulSoup(response.data, "lxml")
@@ -80,9 +85,6 @@ def url2input(url):
     return df_in,max_price
 
 
-import text_to_attrs
-import attrs_clean
-
 
 def bike_data_process(df):    
     df.drop(columns=['serialnumber'],inplace=True)    
@@ -103,6 +105,7 @@ def bike_data_process(df):
     # transform condition into numerical data
     condition_dict = {'salvage':0.1, 'fair':1, 'good':2,'great':3,'excellent':3.5,'likenew':4,'new':5}
     df_c4.condition = df_c4.condition.map(condition_dict)
+    df_c4.condition.fillna(value = 2, inplace=True)
     # features, through the URL and etc.
     df_num = df_c4[['condition']].copy()    
     df_cat = df_c4[['bicycletype', 'makemanufacturer','modelnamenumber', 
@@ -133,9 +136,10 @@ def recommend_bike(url,droplist,city):
     # https://newyork.craigslist.org/jsy/bik/d/fort-lee-canyon-road-race-bike/6815664410.html     
     #url ='https://newyork.craigslist.org/mnh/bik/d/new-york-city-2008-specialized-allez/6815591084.html'          
     ### droplist index: vintage fuji 477 ; cannondale 12044 ; trek kids 1472; 11732 track bike    
-#    droplist = '29427: title'
-#    url = None
-
+    #droplist = '29427: title'
+    #    url = None
+    #url = 'https://sanantonio.craigslist.org/bik/d/san-antonio-2012-focus-black-forest/6825082041.html'
+    
     city = 'US' 
     
     # load the saved processed bike data and feature importance
@@ -153,6 +157,8 @@ def recommend_bike(url,droplist,city):
     #fi_wt[:] = fi_wt.values + fi_wt.mean(axis=1)[0]*1e-15
     #X_wt[:] = np.divide(X_wt.values,np.sqrt(fi_wt.values))    
     #X_wt[:] = X_wt.divide(np.sqrt(fi_wt.loc[0]),axis=1)  
+    
+    #print('******************',url)
     
     if (url == None) or (url == ''):
         # input vector - input vector * weight (element-wise)
@@ -175,6 +181,7 @@ def recommend_bike(url,droplist,city):
         #fi_wt_mat = fi_wt.append([fi_wt]*1)
         #fi_wt_mat.set_index(keys = X_wt.index,inplace=True)
         #X_in[:] = np.multiply(X_in,np.sqrt(fi_wt.values))
+        
         # add the newly scraped imageURL and other raw parameters to df_cat for displaying purpose
         df_cat['imageURL'] = vec_in['imageURL'].iloc[0]
         df_cat['URL'] = vec_in['URL'].iloc[0]
@@ -183,9 +190,14 @@ def recommend_bike(url,droplist,city):
         
         
     # calculate the weighted cosine similarity
-    wcs_mat = metrics.pairwise.cosine_similarity(X_in, X_wt_price)
-    wcs = wcs_mat[0]
-    
+    #wcs_mat = metrics.pairwise.cosine_similarity(X_in, X_wt_price)
+    #wcs = wcs_mat[0]
+
+    # To reduce the memory requirement - calculate the weighted cosine similarity
+    wcs_mat1 = metrics.pairwise.cosine_similarity(X_in, X_wt_price[0:round(len(X_wt_price)/2)])
+    wcs_mat2 = metrics.pairwise.cosine_similarity(X_in, X_wt_price[round(len(X_wt_price)/2):])    
+    wcs = np.concatenate((wcs_mat1[0],wcs_mat2[0]),axis=0)
+
     similarity = pd.Series(wcs, index = X_wt_price.index).apply(lambda x: 0 if np.round(x,decimals=6) == 1.0 else x).sort_values(ascending=False)
     sim_idx = similarity.index
     
