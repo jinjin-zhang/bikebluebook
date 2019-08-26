@@ -38,7 +38,7 @@ def get_craigslist_postings(city,slp_min = 2, slp_max = 4):
     satisfied = False
     n = 1
     
-    while not(satisfied) and n < 30:  #################################### orignal n < 30
+    while not(satisfied) and n < 35:  #################################### orignal n < 30
         time.sleep(np.random.randint(slp_min,slp_max) + np.random.rand())
         url = "https://"+city+".craigslist.org/search/bia?s="+str(n*120) #additional pages
         print(url)
