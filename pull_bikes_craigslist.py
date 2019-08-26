@@ -22,7 +22,7 @@ import os
 from collections import defaultdict
 import numpy as np
 
-def get_craigslist_postings(city,slp_min = 2, slp_max = 3):
+def get_craigslist_postings(city,slp_min = 2, slp_max = 4):
  
     http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',ca_certs=certifi.where())
 
@@ -38,7 +38,7 @@ def get_craigslist_postings(city,slp_min = 2, slp_max = 3):
     satisfied = False
     n = 1
     
-    while not(satisfied) and n < 20:  #################################### orignal n < 30
+    while not(satisfied) and n < 30:  #################################### orignal n < 30
         time.sleep(np.random.randint(slp_min,slp_max) + np.random.rand())
         url = "https://"+city+".craigslist.org/search/bia?s="+str(n*120) #additional pages
         print(url)
