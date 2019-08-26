@@ -22,7 +22,7 @@ import os
 from collections import defaultdict
 import numpy as np
 
-def get_craigslist_postings(city,slp_min = 2, slp_max = 4):
+def get_craigslist_postings(city,slp_min = 0.5, slp_max = 4):
  
     http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED',ca_certs=certifi.where())
 
